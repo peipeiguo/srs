@@ -535,6 +535,7 @@ public:
     void set_all_tracks_status(std::string stream_uri, bool is_publish, bool status);
 private:
     srs_error_t on_binding_request(SrsStunPacket* r);
+    srs_error_t on_binding_request(SrsUdpMuxSocket* skt, SrsStunPacket* r);
     // publish media capabilitiy negotiate
     srs_error_t negotiate_publish_capability(SrsRtcUserConfig* ruc, SrsRtcSourceDescription* stream_desc);
     srs_error_t generate_publish_local_sdp(SrsRequest* req, SrsSdp& local_sdp, SrsRtcSourceDescription* stream_desc, bool unified_plan);

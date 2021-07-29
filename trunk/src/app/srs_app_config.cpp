@@ -3171,8 +3171,6 @@ srs_error_t SrsConfig::raw_disable_vhost(string vhost, bool& applied)
     applied = false;
     
     SrsConfDirective* conf = root->get("vhost", vhost);
-    srs_assert(conf);
-
     conf->get_or_create("enabled")->set_arg0("off");
     
     if ((err = do_reload_vhost_removed(vhost)) != srs_success) {
@@ -3191,8 +3189,6 @@ srs_error_t SrsConfig::raw_enable_vhost(string vhost, bool& applied)
     applied = false;
     
     SrsConfDirective* conf = root->get("vhost", vhost);
-    srs_assert(conf);
-
     conf->get_or_create("enabled")->set_arg0("on");
     
     if ((err = do_reload_vhost_added(vhost)) != srs_success) {
@@ -3211,8 +3207,6 @@ srs_error_t SrsConfig::raw_enable_dvr(string vhost, string stream, bool& applied
     applied = false;
     
     SrsConfDirective* conf = root->get("vhost", vhost);
-    srs_assert(conf);
-
     conf = conf->get_or_create("dvr")->get_or_create("dvr_apply");
     
     if (conf->args.size() == 1 && (conf->arg0() == "all" || conf->arg0() == "none")) {
@@ -3239,8 +3233,6 @@ srs_error_t SrsConfig::raw_disable_dvr(string vhost, string stream, bool& applie
     applied = false;
     
     SrsConfDirective* conf = root->get("vhost", vhost);
-    srs_assert(conf);
-
     conf = conf->get_or_create("dvr")->get_or_create("dvr_apply");
     
     std::vector<string>::iterator it;
@@ -3688,7 +3680,8 @@ srs_error_t SrsConfig::check_normal_config()
             string n = conf->at(i)->name;
             if (n != "enabled" && n != "listen" && n != "dir" && n != "candidate" && n != "ecdsa"
                 && n != "encrypt" && n != "reuseport" && n != "merge_nalus" && n != "black_hole"
-                && n != "ip_family") {
+                && n != "ip_family"         // add by bluechen
+                && n != "lbs_listen") {
                 return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal rtc_server.%s", n.c_str());
             }
         }
@@ -4243,18 +4236,6 @@ bool SrsConfig::get_asprocess()
     return SRS_CONF_PERFER_FALSE(conf->arg0());
 }
 
-bool SrsConfig::whether_query_latest_version()
-{
-    static bool DEFAULT = true;
-
-    SrsConfDirective* conf = root->get("query_latest_version");
-    if (!conf) {
-        return DEFAULT;
-    }
-
-    return SRS_CONF_PERFER_TRUE(conf->arg0());
-}
-
 bool SrsConfig::empty_ip_ok()
 {
     static bool DEFAULT = true;
@@ -4637,6 +4618,24 @@ int SrsConfig::get_rtc_server_listen()
     }
 
     conf = conf->get("listen");
+    if (!conf || conf->arg0().empty()) {
+        return DEFAULT;
+    }
+
+    return ::atoi(conf->arg0().c_str());
+}
+
+// add by bluechen
+int SrsConfig::get_rtc_server_lbs_listen()
+{
+    static int DEFAULT = 8000;
+
+    SrsConfDirective* conf = root->get("rtc_server");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("lbs_listen");
     if (!conf || conf->arg0().empty()) {
         return DEFAULT;
     }

@@ -1976,7 +1976,9 @@ srs_error_t SrsRtcConnection::on_stun(SrsUdpMuxSocket* skt, SrsStunPacket* r)
     }
 
     if ((err = on_binding_request(r)) != srs_success) {
-        return srs_error_wrap(err, "stun binding request failed");
+    // if ((err = on_binding_request(skt, r)) != srs_success) {    
+        srs_warn("bluechen on_binding_request error is: %s,%s",SrsCplxError::description(err).c_str(), SrsCplxError::summary(err).c_str() );
+        // return srs_error_wrap(err, "stun binding request failed"); disabled by bluechen
     }
 
     return err;
@@ -2625,7 +2627,61 @@ srs_error_t SrsRtcConnection::on_binding_request(SrsStunPacket* r)
         return srs_error_wrap(err, "stun binding response encode failed");
     }
 
+    srs_warn("bluechen sendonly_skt ip is: %s,sendonly_skt port is %d",sendonly_skt->get_peer_ip().c_str(), sendonly_skt->get_peer_port());
     if ((err = sendonly_skt->sendto(stream->data(), stream->pos(), 0)) != srs_success) {
+        return srs_error_wrap(err, "stun binding response send failed");
+    }
+
+    if (state_ == WAITING_STUN) {
+        state_ = DOING_DTLS_HANDSHAKE;
+        // TODO: FIXME: Add cost.
+        srs_trace("RTC: session STUN done, waiting DTLS handshake.");
+
+        if((err = transport_->start_active_handshake()) != srs_success) {
+            return srs_error_wrap(err, "fail to dtls handshake");
+        }
+    }
+
+    if (_srs_blackhole->blackhole) {
+        _srs_blackhole->sendto(stream->data(), stream->pos());
+    }
+
+    return err;
+}
+
+// add by bluechen 4 nginx stun use new udp port
+srs_error_t SrsRtcConnection::on_binding_request(SrsUdpMuxSocket* skt, SrsStunPacket* r)
+{
+    srs_error_t err = srs_success;
+
+    ++_srs_pps_sstuns->sugar;
+
+    bool strict_check = _srs_config->get_rtc_stun_strict_check(req->vhost);
+    if (strict_check && r->get_ice_controlled()) {
+        // @see: https://tools.ietf.org/html/draft-ietf-ice-rfc5245bis-00#section-6.1.3.1
+        // TODO: Send 487 (Role Conflict) error response.
+        return srs_error_new(ERROR_RTC_STUN, "Peer must not in ice-controlled role in ice-lite mode.");
+    }
+
+    SrsStunPacket stun_binding_response;
+    char buf[kRtpPacketSize];
+    SrsBuffer* stream = new SrsBuffer(buf, sizeof(buf));
+    SrsAutoFree(SrsBuffer, stream);
+
+    stun_binding_response.set_message_type(BindingResponse);
+    stun_binding_response.set_local_ufrag(r->get_remote_ufrag());
+    stun_binding_response.set_remote_ufrag(r->get_local_ufrag());
+    stun_binding_response.set_transcation_id(r->get_transcation_id());
+    // FIXME: inet_addr is deprecated, IPV6 support
+    stun_binding_response.set_mapped_address(be32toh(inet_addr(skt->get_peer_ip().c_str())));
+    stun_binding_response.set_mapped_port(skt->get_peer_port());
+
+    if ((err = stun_binding_response.encode(get_local_sdp()->get_ice_pwd(), stream)) != srs_success) {
+        return srs_error_wrap(err, "stun binding response encode failed");
+    }
+
+    srs_warn("bluechen skt ip is: %s,skt port is %d",skt->get_peer_ip().c_str(), skt->get_peer_port());
+    if ((err = skt->sendto(stream->data(), stream->pos(), 0)) != srs_success) {
         return srs_error_wrap(err, "stun binding response send failed");
     }
 

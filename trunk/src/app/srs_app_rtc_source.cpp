@@ -201,6 +201,7 @@ srs_error_t SrsRtcConsumer::dump_packet(SrsRtpPacket** ppkt)
     // TODO: FIXME: Refine performance by ring buffer.
     if (!queue.empty()) {
         *ppkt = queue.front();
+        // srs_warn("bluechen rtc consumer's queue size is %d ,is_keyframe: %d,SrsRtpPacket nb_bytes(): %d",queue.size(),(*ppkt)->is_keyframe() ,(*ppkt)->nb_bytes());
         queue.erase(queue.begin());
     }
 
@@ -691,7 +692,7 @@ srs_error_t SrsRtcSource::on_timer(srs_utime_t interval)
 
     return err;
 }
-
+#define SRS_FFMPEG_FIT
 #ifdef SRS_FFMPEG_FIT
 SrsRtcFromRtmpBridger::SrsRtcFromRtmpBridger(SrsRtcSource* source)
 {
