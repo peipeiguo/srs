@@ -1977,7 +1977,7 @@ srs_error_t SrsRtcConnection::on_stun(SrsUdpMuxSocket* skt, SrsStunPacket* r)
 
     if ((err = on_binding_request(r)) != srs_success) {
     // if ((err = on_binding_request(skt, r)) != srs_success) {    
-        srs_warn("bluechen on_binding_request error is: %s,%s",SrsCplxError::description(err).c_str(), SrsCplxError::summary(err).c_str() );
+        srs_verbose("bluechen on_binding_request error is: %s,%s",SrsCplxError::description(err).c_str(), SrsCplxError::summary(err).c_str() );
         // return srs_error_wrap(err, "stun binding request failed"); disabled by bluechen
     }
 
@@ -2627,7 +2627,7 @@ srs_error_t SrsRtcConnection::on_binding_request(SrsStunPacket* r)
         return srs_error_wrap(err, "stun binding response encode failed");
     }
 
-    srs_warn("bluechen sendonly_skt ip is: %s,sendonly_skt port is %d",sendonly_skt->get_peer_ip().c_str(), sendonly_skt->get_peer_port());
+    srs_verbose("bluechen sendonly_skt ip is: %s,sendonly_skt port is %d",sendonly_skt->get_peer_ip().c_str(), sendonly_skt->get_peer_port());
     if ((err = sendonly_skt->sendto(stream->data(), stream->pos(), 0)) != srs_success) {
         return srs_error_wrap(err, "stun binding response send failed");
     }
@@ -2680,7 +2680,7 @@ srs_error_t SrsRtcConnection::on_binding_request(SrsUdpMuxSocket* skt, SrsStunPa
         return srs_error_wrap(err, "stun binding response encode failed");
     }
 
-    srs_warn("bluechen skt ip is: %s,skt port is %d",skt->get_peer_ip().c_str(), skt->get_peer_port());
+    srs_verbose("bluechen skt ip is: %s,skt port is %d",skt->get_peer_ip().c_str(), skt->get_peer_port());
     if ((err = skt->sendto(stream->data(), stream->pos(), 0)) != srs_success) {
         return srs_error_wrap(err, "stun binding response send failed");
     }
