@@ -682,17 +682,17 @@ void SrsPlayEdge::on_all_client_stop()
 {
     // when all client disconnected,
     // and edge is ingesting origin stream, abort it.
-    if (state == SrsEdgeStatePlay || state == SrsEdgeStateIngestConnected) {
-        SrsEdgeState pstate = state;
-        state = SrsEdgeStateIngestStopping;
+    // if (state == SrsEdgeStatePlay || state == SrsEdgeStateIngestConnected) {
+    //     SrsEdgeState pstate = state;
+    //     state = SrsEdgeStateIngestStopping;
 
-        ingester->stop();
+    //     ingester->stop();
 
-        state = SrsEdgeStateInit;
-        srs_trace("edge change from %d to %d then %d (init).", pstate, SrsEdgeStateIngestStopping, state);
+    //     state = SrsEdgeStateInit;
+    //     srs_trace("edge change from %d to %d then %d (init).", pstate, SrsEdgeStateIngestStopping, state);
         
-        return;
-    }
+    //     return;
+    // }
 }
 
 string SrsPlayEdge::get_curr_origin()
