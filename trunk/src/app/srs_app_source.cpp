@@ -1716,7 +1716,7 @@ srs_error_t SrsLiveSourceManager::fetch_or_create(SrsRequest* r, ISrsLiveSourceH
 
     srs_trace("new source, stream_url=%s", stream_url.c_str());
 
-    source = new SrsLiveSource();
+    source = new SrsLiveSource(lock);
     if ((err = source->initialize(r, h)) != srs_success) {
         err = srs_error_wrap(err, "init source %s", r->get_stream_url().c_str());
         goto failed;
@@ -1834,7 +1834,7 @@ ISrsLiveSourceBridger::~ISrsLiveSourceBridger()
 {
 }
 
-SrsLiveSource::SrsLiveSource()
+SrsLiveSource::SrsLiveSource(srs_mutex_t tLock)
 {
     req = NULL;
     jitter_algorithm = SrsRtmpJitterAlgorithmOFF;
@@ -1858,6 +1858,7 @@ SrsLiveSource::SrsLiveSource()
     
     _srs_config->subscribe(this);
     atc = false;
+    lock = tLock;
 }
 
 SrsLiveSource::~SrsLiveSource()
@@ -2622,12 +2623,16 @@ srs_error_t SrsLiveSource::consumer_dumps(SrsLiveConsumer* consumer, bool ds, bo
 
 void SrsLiveSource::on_consumer_destroy(SrsLiveConsumer* consumer)
 {
+    // Use lock to protect coroutine switch.
+    // @when a rtmp client to edge disconnect and then reconnect quickly ,the edge's upstream will not be created correctly
+    SrsLocker( lock );
+
     std::vector<SrsLiveConsumer*>::iterator it;
     it = std::find(consumers.begin(), consumers.end(), consumer);
     if (it != consumers.end()) {
         consumers.erase(it);
     }
-    
+     
     if (consumers.empty()) {
         play_edge->on_all_client_stop();
         die_at = srs_get_system_time();
