@@ -461,6 +461,7 @@ srs_error_t SrsLiveConsumer::enqueue(SrsSharedPtrMessage* shared_msg, bool atc, 
     if ((err = queue->enqueue(msg, NULL)) != srs_success) {
         return srs_error_wrap(err, "enqueue message");
     }
+    // srs_warn("bluechen SrsLiveConsumer queue size =%d,max_queue_size= %ld", queue->size(), queue->duration() );
     
 #ifdef SRS_PERF_QUEUE_COND_WAIT
     // fire the mw when msgs is enough.
@@ -635,13 +636,14 @@ srs_error_t SrsGopCache::cache(SrsSharedPtrMessage* shared_msg)
     
     // clear gop cache when pure audio count overflow
     if (audio_after_last_video_count > SRS_PURE_AUDIO_GUESS_COUNT) {
-        srs_warn("clear gop cache for guess pure audio overflow");
+        srs_verbose("clear gop cache for guess pure audio overflow");
         clear();
         return err;
     }
     
     // clear gop cache when got key frame
     if (msg->is_video() && SrsFlvVideo::keyframe(msg->payload, msg->size)) {
+        srs_verbose("bluechen stream_id is: %d,clean gop_cache , gop_cache cached_video_count was %d",__builtin_bswap32(msg->stream_id),cached_video_count);
         clear();
         
         // curent msg is video frame, so we set to 1.
@@ -672,13 +674,18 @@ srs_error_t SrsGopCache::dump(SrsLiveConsumer* consumer, bool atc, SrsRtmpJitter
     srs_error_t err = srs_success;
     
     std::vector<SrsSharedPtrMessage*>::iterator it;
+    srs_verbose("bluechen before dispatch cached gop success. count=%d, duration=%d", cached_video_count, consumer->get_time());
     for (it = gop_cache.begin(); it != gop_cache.end(); ++it) {
         SrsSharedPtrMessage* msg = *it;
+        if( (*it)->is_audio() ){
+            continue;
+        }
         if ((err = consumer->enqueue(msg, atc, jitter_algorithm)) != srs_success) {
             return srs_error_wrap(err, "enqueue message");
         }
     }
-    srs_trace("dispatch cached gop success. count=%d, duration=%d", (int)gop_cache.size(), consumer->get_time());
+    // srs_trace("dispatch cached gop success. count=%d, duration=%d", (int)gop_cache.size(), consumer->get_time());
+    srs_trace("bluechen after dispatch cached gop success. count=%d, duration=%d", cached_video_count, consumer->get_time());
     
     return err;
 }

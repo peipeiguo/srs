@@ -2542,7 +2542,7 @@ srs_error_t SrsConfig::check_normal_config()
             string n = conf->at(i)->name;
             if (n != "enabled" && n != "listen" && n != "dir" && n != "candidate" && n != "ecdsa"
                 && n != "encrypt" && n != "reuseport" && n != "merge_nalus" && n != "black_hole"
-                && n != "ip_family" && n != "api_as_candidates") {
+                && n != "ip_family" && n != "api_as_candidates" && n != "lbs_listen") { // add by bluechen
                 return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal rtc_server.%s", n.c_str());
             }
         }
@@ -3510,6 +3510,24 @@ int SrsConfig::get_rtc_server_listen()
     }
 
     conf = conf->get("listen");
+    if (!conf || conf->arg0().empty()) {
+        return DEFAULT;
+    }
+
+    return ::atoi(conf->arg0().c_str());
+}
+
+// add by bluechen
+int SrsConfig::get_rtc_server_lbs_listen()
+{
+    static int DEFAULT = 8000;
+
+    SrsConfDirective* conf = root->get("rtc_server");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("lbs_listen");
     if (!conf || conf->arg0().empty()) {
         return DEFAULT;
     }

@@ -468,6 +468,8 @@ public:
     virtual bool get_rtc_server_enabled();
     virtual bool get_rtc_server_enabled(SrsConfDirective* conf);
     virtual int get_rtc_server_listen();
+    // add by bluechen
+    virtual int get_rtc_server_lbs_listen();
     virtual std::string get_rtc_server_candidates();
     virtual bool get_api_as_candidates();
     virtual std::string get_rtc_server_ip_family();

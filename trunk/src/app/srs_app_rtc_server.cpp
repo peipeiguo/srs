@@ -573,7 +573,8 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig* ruc, SrsSdp& local
 
     // We allows to mock the eip of server.
     if (true) {
-        int listen_port = _srs_config->get_rtc_server_listen();
+        // int listen_port = _srs_config->get_rtc_server_listen();  by bluechen
+        int listen_port = _srs_config->get_rtc_server_lbs_listen();
         set<string> candidates = discover_candidates(ruc);
         for (set<string>::iterator it = candidates.begin(); it != candidates.end(); ++it) {
             string hostname; int port = listen_port;
