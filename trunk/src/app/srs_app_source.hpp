@@ -524,6 +524,7 @@ private:
     SrsOriginHub* hub;
     // The metadata cache.
     SrsMetaCache* meta;
+    srs_mutex_t lock;
 private:
     // Whether source is avaiable for publishing.
     bool _can_publish;
@@ -531,7 +532,7 @@ private:
     // We will remove the source when source die.
     srs_utime_t die_at;
 public:
-    SrsLiveSource();
+    SrsLiveSource(srs_mutex_t tLock);
     virtual ~SrsLiveSource();
 public:
     virtual void dispose();
