@@ -39,6 +39,12 @@ RUN echo "BUILDPLATFORM: $BUILDPLATFORM, TARGETPLATFORM: $TARGETPLATFORM"
 # Expose ports for streaming @see https://github.com/ossrs/srs#ports
 EXPOSE 1935 1985 8080 8000/udp 10080/udp
 
+# For SRS Log Rotate
+ARG DEBIAN_FRONTEND=noninteractive
+ARG DEBCONF_NOWARNINGS="yes"
+RUN apt-get update && apt-get install -y --no-install-recommends --no-install-suggests cron logrotate
+COPY trunk/scripts/start.sh /usr/local/srs/
+
 # FFMPEG 4.1
 COPY --from=build /usr/local/bin/ffmpeg /usr/local/srs/objs/ffmpeg/bin/ffmpeg
 # SRS binary, config files and srs-console.
@@ -46,4 +52,4 @@ COPY --from=build /usr/local/srs /usr/local/srs
 
 # Default workdir and command.
 WORKDIR /usr/local/srs
-CMD ["./objs/srs", "-c", "conf/docker.conf"]
+ENTRYPOINT ["/usr/local/srs/start.sh"]
