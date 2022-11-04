@@ -13,6 +13,8 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
+ #include <sstream>
 
 class SrsConfDirective;
 class SrsPithyPrint;
@@ -48,6 +50,7 @@ private:
     int                         achannels;
     std::vector<std::string>    aparams;
     std::string                 oformat;
+    std::string                 streammap;
     std::string                 _output;
 public:
     SrsFFMPEG(std::string ffmpeg_bin);

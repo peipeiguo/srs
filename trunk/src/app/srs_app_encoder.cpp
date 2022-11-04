@@ -5,10 +5,11 @@
 //
 
 #include <srs_app_encoder.hpp>
-
+#include <unistd.h>
 #include <algorithm>
 using namespace std;
-
+#include <fstream>
+#include <sstream>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_app_config.hpp>
@@ -96,12 +97,88 @@ srs_error_t SrsEncoder::cycle()
     // kill ffmpeg when finished and it alive
     std::vector<SrsFFMPEG*>::iterator it;
     
-    for (it = ffmpegs.begin(); it != ffmpegs.end(); ++it) {
+     for (it = ffmpegs.begin(); it != ffmpegs.end(); ++it) {
         SrsFFMPEG* ffmpeg = *it;
+	std::string  output= ffmpeg->output();	
         ffmpeg->stop();
-    }
+
+      if (srs_string_contains(output,".m3u8")){ 
+          stringstream intt(output);
+          string ts;
+          std::vector<std::string> params;
+          while (intt >> ts) {
+             params.push_back(ts);
+          }
+          if(params.size()>2){
+             std::string  dirname = srs_path_dirname(params.at(2));
+             std::string  masterfile = dirname + "/" + params.at(1);
+             srs_trace("stop ffmpeg remove m3u8 and ts, %s", masterfile.c_str());
+             ClearHlsData(masterfile);
+         } 
+      }
+   }
     
     return err;
+}
+
+void ClearHlsData(std::string outfile) 
+{
+	std::string  dirname = srs_path_dirname(outfile);
+	std::ifstream intt(outfile.c_str());
+	
+	if (intt.is_open()){
+	    std::string line;
+	    while (getline (intt, line)) { 
+		if (srs_string_ends_with(line,".m3u8")){
+		    string m3u8_i =  dirname + "/" + line;
+                     srs_trace( "~~~~~~~into tmp file %s", m3u8_i.c_str());
+		    std::ifstream intt_i(m3u8_i.c_str());
+		    if(intt_i.is_open()){
+				 	std::string line_i;
+                                        std:: string lastfile;
+				 	while (getline (intt_i, line_i)){
+						if (srs_string_ends_with(line_i,".ts")){
+                                                  std::string tsfile_i = dirname + "/" +line_i;
+							if (::unlink( tsfile_i.c_str()) >= 0) {
+                                                            lastfile = line_i;
+                                                            srs_trace( "unlink tmp file %s", tsfile_i.c_str());
+                                                         }
+						}
+					}
+                                        vector<string> numlist = srs_string_split(lastfile, "_");
+                                        vector<string> numdata= srs_string_split(numlist.back(), ".");
+                                        stringstream sstr;
+                                        sstr << numdata.at(0);
+                                        long num;
+                                        sstr >> num;
+                                        for (int i=0; i<20; i++){
+                                            stringstream sstemp;
+                                            sstemp << (num-i);
+                                            std::string tempstr =sstemp.str();
+                                             sstemp.clear();
+                                            tempstr = tempstr + "." + numdata.back();
+                                            std::string temp = "";
+                                            for (int j =0; j< int(numlist.size()-1); j++ ){
+                                                temp = temp + numlist.at(j) + "_";
+                                            }
+                                            tempstr =temp +  tempstr ;
+                                            tempstr = dirname +"/"+  tempstr;
+                                            if (::unlink(tempstr.c_str()) >= 0){
+                                             srs_trace( "unlink tmp file %s", tempstr.c_str());
+                                            }  
+                                        }
+                                         sstr.clear();
+					if (::unlink(m3u8_i.c_str()) >= 0) {
+                                             srs_trace( "unlink tmp file %s", m3u8_i.c_str());
+                                       }
+		      }
+				 
+			}
+		}
+            if (::unlink(outfile.c_str()) >= 0) {
+                srs_trace( "unlink tmp file %s", outfile.c_str());
+            }	
+      } 
 }
 
 srs_error_t SrsEncoder::do_cycle()

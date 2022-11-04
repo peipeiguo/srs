@@ -716,6 +716,18 @@ string SrsConfDirective::arg1()
     return "";
 }
 
+string SrsConfDirective::argall()
+{
+    string s = args.at(0);
+    if (args.size() > 1) {
+        for (int i = 1; i < (int)args.size(); i++){
+            s.append(" ");
+            s.append(args.at(i));
+        }
+        return s;
+    }
+    return "";
+}
 string SrsConfDirective::arg2()
 {
     if (args.size() > 2) {
@@ -2821,7 +2833,7 @@ srs_error_t SrsConfig::check_normal_config()
                                 && e != "vbitrate" && e != "vfps" && e != "vwidth" && e != "vheight"
                                 && e != "vthreads" && e != "vprofile" && e != "vpreset" && e != "vparams"
                                 && e != "acodec" && e != "abitrate" && e != "asample_rate" && e != "achannels"
-                                && e != "aparams" && e != "output" && e != "perfile"
+                                && e != "aparams" && e != "output" && e != "perfile" && e != "streammap"
                                 && e != "iformat" && e != "oformat") {
                                 return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal vhost.transcode.engine.%s of %s", e.c_str(), vhost->arg0().c_str());
                             }
@@ -3869,6 +3881,21 @@ int SrsConfig::get_rtc_drop_for_pt(string vhost)
     }
 
     return ::atoi(conf->arg0().c_str());
+}
+string SrsConfig::get_engine_streammap(SrsConfDirective* conf)
+{
+    static string DEFAULT = "";
+
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("streammap");
+    if (!conf || conf->arg0().empty()) {
+        return DEFAULT;
+    }
+
+    return conf->arg0();
 }
 
 bool SrsConfig::get_rtc_to_rtmp(string vhost)
@@ -5319,7 +5346,7 @@ string SrsConfig::get_engine_vpreset(SrsConfDirective* conf)
         return DEFAULT;
     }
     
-    return conf->arg0();
+    return conf->argall();
 }
 
 vector<string> SrsConfig::get_engine_vparams(SrsConfDirective* conf)
@@ -5455,7 +5482,7 @@ string SrsConfig::get_engine_oformat(SrsConfDirective* conf)
         return DEFAULT;
     }
     
-    return conf->arg0();
+    return conf->argall();
 }
 
 string SrsConfig::get_engine_output(SrsConfDirective* conf)
@@ -5471,7 +5498,7 @@ string SrsConfig::get_engine_output(SrsConfDirective* conf)
         return DEFAULT;
     }
     
-    return conf->arg0();
+    return conf->argall();
 }
 
 SrsConfDirective* SrsConfig::get_exec(string vhost)

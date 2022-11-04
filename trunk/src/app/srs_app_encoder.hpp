@@ -18,7 +18,7 @@ class SrsConfDirective;
 class SrsRequest;
 class SrsPithyPrint;
 class SrsFFMPEG;
-
+void ClearHlsData( std::string outfile) ;
 // The encoder for a stream, may use multiple
 // ffmpegs to transcode the specified stream.
 class SrsEncoder : public ISrsCoroutineHandler

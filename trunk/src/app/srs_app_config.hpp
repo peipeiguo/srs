@@ -184,6 +184,7 @@ public:
     virtual std::string arg1();
     virtual std::string arg2();
     virtual std::string arg3();
+	virtual std::string argall();
 // directives
 public:
     // Get the directive by index.
@@ -782,6 +783,7 @@ public:
     // Get the vpreset of engine,
     // The libx264 preset, can be ultrafast,superfast,veryfast,faster,fast,medium,slow,slower,veryslow,placebo
     virtual std::string get_engine_vpreset(SrsConfDirective* conf);
+	virtual std::string get_engine_streammap(SrsConfDirective* conf);
     // Get the additional video params.
     virtual std::vector<std::string> get_engine_vparams(SrsConfDirective* conf);
     // Get the acodec of engine,

@@ -111,6 +111,7 @@ srs_error_t SrsFFMPEG::initialize_transcode(SrsConfDirective* engine)
     abitrate = _srs_config->get_engine_abitrate(engine);
     asample_rate = _srs_config->get_engine_asample_rate(engine);
     achannels = _srs_config->get_engine_achannels(engine);
+    streammap =  _srs_config->get_engine_streammap(engine);
     aparams = _srs_config->get_engine_aparams(engine);
     oformat = _srs_config->get_engine_oformat(engine);
     
@@ -123,9 +124,9 @@ srs_error_t SrsFFMPEG::initialize_transcode(SrsConfDirective* engine)
     }
     
     if (vcodec != SRS_RTMP_ENCODER_COPY && vcodec != SRS_RTMP_ENCODER_NO_VIDEO && vcodec != SRS_RTMP_ENCODER_VCODEC_PNG) {
-        if (vcodec != SRS_RTMP_ENCODER_VCODEC_LIBX264) {
-            return srs_error_new(ERROR_ENCODER_VCODEC, "invalid vcodec, must be %s, actual %s", SRS_RTMP_ENCODER_VCODEC_LIBX264, vcodec.c_str());
-        }
+      // if (vcodec != SRS_RTMP_ENCODER_VCODEC_LIBX264) {
+       //     return srs_error_new(ERROR_ENCODER_VCODEC, "invalid vcodec, must be %s, actual %s", SRS_RTMP_ENCODER_VCODEC_LIBX264, vcodec.c_str());
+      //  }
         if (vbitrate < 0) {
             return srs_error_new(ERROR_ENCODER_VBITRATE, "invalid vbitrate: %d", vbitrate);
         }
@@ -141,9 +142,9 @@ srs_error_t SrsFFMPEG::initialize_transcode(SrsConfDirective* engine)
         if (vthreads < 0) {
             return srs_error_new(ERROR_ENCODER_VTHREADS, "invalid vthreads: %d", vthreads);
         }
-        if (vprofile.empty()) {
-            return srs_error_new(ERROR_ENCODER_VPROFILE, "invalid vprofile: %s", vprofile.c_str());
-        }
+       // if (vprofile.empty()) {
+       //     return srs_error_new(ERROR_ENCODER_VPROFILE, "invalid vprofile: %s", vprofile.c_str());
+       // }
         if (vpreset.empty()) {
             return srs_error_new(ERROR_ENCODER_VPRESET, "invalid vpreset: %s", vpreset.c_str());
         }
@@ -252,12 +253,12 @@ srs_error_t SrsFFMPEG::start()
     }
     
     // video specified.
-    if (vcodec != SRS_RTMP_ENCODER_NO_VIDEO) {
-        params.push_back("-vcodec");
-        params.push_back(vcodec);
-    } else {
-        params.push_back("-vn");
-    }
+   // if (vcodec != SRS_RTMP_ENCODER_NO_VIDEO) {
+   //     params.push_back("-vcodec");
+   //     params.push_back(vcodec);
+    //} else {
+    //    params.push_back("-vn");
+    //}
     
     // the codec params is disabled when copy
     if (vcodec != SRS_RTMP_ENCODER_COPY && vcodec != SRS_RTMP_ENCODER_NO_VIDEO) {
@@ -294,7 +295,11 @@ srs_error_t SrsFFMPEG::start()
         
         if (!vpreset.empty()) {
             params.push_back("-preset");
-            params.push_back(vpreset);
+            istringstream inttt(vpreset);
+            string tss;
+            while (inttt >> tss) {
+                params.push_back(tss);
+            }
         }
         
         // vparams
@@ -310,12 +315,12 @@ srs_error_t SrsFFMPEG::start()
     }
     
     // audio specified.
-    if (acodec != SRS_RTMP_ENCODER_NO_AUDIO) {
-        params.push_back("-acodec");
-        params.push_back(acodec);
-    } else {
-        params.push_back("-an");
-    }
+   // if (acodec != SRS_RTMP_ENCODER_NO_AUDIO) {
+    //    params.push_back("-acodec");
+    //    params.push_back(acodec);
+    //} else {
+    //    params.push_back("-an");
+    //}
     
     // the codec params is disabled when copy
     if (acodec != SRS_RTMP_ENCODER_NO_AUDIO) {
@@ -359,16 +364,41 @@ srs_error_t SrsFFMPEG::start()
             }
         }
     }
+    int num=0;
     
     // output
     if (oformat != "off" && !oformat.empty()) {
         params.push_back("-f");
-        params.push_back(oformat);
+        //params.push_back(oformat);
+		istringstream in(oformat);
+        string t;
+        while (in >> t) {
+            params.push_back(t);
+        }
+		
     }
     
-    params.push_back("-y");
-    params.push_back(_output);
-    
+    //params.push_back("-y");
+   // params.push_back(_output);
+    stringstream intt(_output);
+    string ts;
+    while (intt >> ts) {
+        if (!streammap.empty() && num ==2) {
+            params.push_back("-var_stream_map");
+            params.push_back(streammap);
+
+        }
+
+        params.push_back(ts);
+        num+=1;
+    }
+    //create the file path before start ffmpeg
+   string m3u8 =  params.back();
+    // create m3u8 dir once.
+   string  m3u8_dir = srs_path_dirname(m3u8);
+    if ((err = srs_create_dir_recursively(m3u8_dir)) != srs_success) {
+        return srs_error_wrap(err, "create m3u8 dir");
+    }
     // when specified the log file.
     if (!log_file.empty()) {
         // stdout
